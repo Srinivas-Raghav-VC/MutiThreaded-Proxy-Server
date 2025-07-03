@@ -2,8 +2,7 @@
 
 ## Educational Overview
 
-This project implements a multi-threaded HTTP proxy server with LRU (Least Recently Used) caching for educational purposes. It demonstrates fundamental concepts in:
-
+This project implements a multi-threaded HTTP proxy server with LRU (Least Recently Used) caching
 - **Network Programming**: TCP sockets, HTTP protocol, DNS resolution
 - **Systems Programming**: Multi-threading, synchronization, memory management
 - **Data Structures**: Linked lists, LRU cache implementation
@@ -56,33 +55,55 @@ An HTTP Proxy Server acts as an intermediary between web browsers (clients) and 
 - **Standard Libraries**: pthread, socket libraries
 - **Make** (optional but recommended)
 
-### Quick Start
+### Windows Setup
 
-1. **Clone and Navigate:**
-   ```bash
-   cd proxy-server-directory
-   ```
+```bash
+# Check if GCC is installed
+gcc --version
 
-2. **Compile:**
-   ```bash
-   make
-   ```
+# Install MinGW (if needed)
+choco install mingw
 
-   Or manually:
-   ```bash
-   gcc -o proxy_parse.o -c proxy_parse.c -lpthread
-   gcc -o proxy.o -c proxy_server_with_cache.c -lpthread
-   gcc -o proxy proxy_parse.o proxy.o -lpthread
-   ```
+# Compile Windows version
+make -f Makefile.windows
 
-3. **Run the Proxy:**
-   ```bash
-   ./proxy 8080
-   ```
+# Start the proxy server
+./proxy_windows.exe 8080
 
-4. **Configure Your Browser:**
-   - Set HTTP proxy to: `127.0.0.1:8080`
-   - Or test with curl: `curl -x http://127.0.0.1:8080 http://www.google.com`
+# Test immediately
+curl -x http://127.0.0.1:8080 http://httpbin.org/json
+
+# Launch Chrome with proxy
+start chrome --proxy-server="127.0.0.1:8080"
+```
+
+### Unix/Linux Setup
+
+```bash
+# Install dependencies (Ubuntu/Debian)
+sudo apt-get install build-essential gcc make
+
+# Compile Unix version
+make
+
+# Start the proxy server
+./proxy 8080
+
+# Test with curl
+curl -x http://127.0.0.1:8080 http://www.google.com
+```
+
+### Manual Compilation
+
+**Windows:**
+```bash
+gcc -o proxy_windows.exe proxy_server_windows.c proxy_parse.c -lws2_32
+```
+
+**Unix/Linux:**
+```bash
+gcc -o proxy proxy_server_with_cache.c proxy_parse.c -lpthread
+```
 
 ## Usage Examples
 
@@ -116,9 +137,7 @@ proxy-server/
 ├── proxy_parse.c                # HTTP parsing library source
 ├── Makefile                     # Build configuration
 ├── README.md                    # This documentation
-└── other-projects/              # Additional course projects
-    ├── Chat_Room/              # Socket-based chat implementation
-    └── usb_driver/             # Linux kernel module example
+
 ```
 
 ## Key Learning Concepts
@@ -207,6 +226,19 @@ This project serves as a comprehensive introduction to:
 - **"Permission denied"**: Use port > 1024 or run as administrator
 - **"Connection refused"**: Check firewall settings
 
+**Windows-Specific Issues:**
+```bash
+# Port already in use
+netstat -ano | findstr :8080
+taskkill /PID <process_id> /F
+
+# Test if proxy is running
+netstat -an | findstr 8080
+
+# Set proxy environment
+set http_proxy=127.0.0.1:8080
+```
+
 **Browser Configuration:**
 - **Proxy not working**: Verify IP (127.0.0.1) and port (8080)
 - **HTTPS sites**: This proxy handles HTTP only
@@ -228,35 +260,4 @@ Enable detailed logging by modifying debug flags in source code:
   - Cache Miss: Network latency + server response time
 - **Memory Usage**: Base ~5MB + cached content
 
-### Scalability Notes
-- **Thread Model**: One thread per client (suitable for educational use)
-- **Production Considerations**: Consider thread pools, epoll/kqueue for high scale
-- **Cache Efficiency**: LRU policy provides good hit rates for typical web browsing
 
-## Future Enhancements
-
-### Potential Improvements
-- **HTTPS Support**: SSL/TLS tunnel handling
-- **HTTP/2**: Modern protocol support
-- **Connection Pooling**: Reuse server connections
-- **Configuration File**: Runtime parameter adjustment
-- **Web Interface**: Browser-based cache management
-- **Statistics Dashboard**: Real-time performance metrics
-
-### Advanced Features
-- **Content Filtering**: Block unwanted content
-- **Bandwidth Limiting**: QoS controls
-- **Load Balancing**: Multiple backend servers
-- **Persistent Cache**: Disk-based storage
-- **Compression**: Gzip encoding support
-
-## License
-
-This project is created for educational purposes. Feel free to use, modify, and distribute for learning and teaching computer networking concepts.
-
-## Support
-
-For questions, issues, or educational discussions about this proxy server implementation, please refer to your course materials or instructor guidance.
-
----
-*This proxy server demonstrates real-world networking concepts in an educational context. It provides hands-on experience with multi-threaded programming, HTTP protocol implementation, and caching strategies commonly used in production web infrastructure.*
