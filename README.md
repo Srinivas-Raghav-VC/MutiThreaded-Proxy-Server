@@ -1,175 +1,94 @@
-# HTTP Proxy Server with LRU Cache Implementation
+# HTTP Proxy Server with LRU Cache
 
-## Educational Overview
+This project is a multi-threaded HTTP proxy server that features an in-memory LRU (Least Recently Used) cache. It's designed to be a practical tool for understanding network programming, threading, and caching.
 
-This project implements a multi-threaded HTTP proxy server with LRU (Least Recently Used) caching
-- **Network Programming**: TCP sockets, HTTP protocol, DNS resolution
-- **Systems Programming**: Multi-threading, synchronization, memory management
-- **Data Structures**: Linked lists, LRU cache implementation
-- **Cross-Platform Development**: Windows/UNIX compatibility layer
+## What it does
 
-## What is an HTTP Proxy Server?
+The proxy server acts as a middleman between a web browser and a website. When you make a request through the proxy, it fetches the content from the website and forwards it to you. If the same content is requested again, it's served from the cache for a significant speed boost.
 
-An HTTP Proxy Server acts as an intermediary between web browsers (clients) and web servers:
+**Core Features:**
+- **Caching:** Speeds up browsing by caching frequently accessed resources.
+- **Multi-threaded:** Handles multiple clients at once.
+- **Cross-Platform:** Works on both Windows and Unix-like systems (Linux, macOS).
 
-```
-[Browser] ↔ [Our Proxy] ↔ [Website Server]
-```
+## Architecture
 
-### Key Benefits:
-- **Caching**: Store popular responses for faster serving
-- **Filtering**: Control access to websites and content
-- **Logging**: Monitor and analyze web traffic
-- **Load Balancing**: Distribute requests across servers
-- **Anonymity**: Hide client IP addresses
+- **Main Thread:** Listens for and accepts new client connections.
+- **Worker Threads:** Each client is handled in a separate thread. A semaphore limits the number of concurrent connections to prevent overload.
+- **LRU Cache:** A simple linked-list based cache stores HTTP responses. When the cache is full, the least recently used item is evicted. Cache operations are thread-safe, protected by a mutex.
+- **HTTP Parsing:** A basic parser handles HTTP GET requests.
 
-## Architecture Overview
-
-### 1. Multi-Threaded Client Handling
-- Main thread accepts new client connections
-- Each client gets a dedicated worker thread
-- Semaphore limits concurrent connections (prevents overload)
-- Thread-safe operations using mutex locks
-
-### 2. LRU Cache System
-- Stores complete HTTP responses in memory
-- Evicts oldest unused entries when cache is full
-- O(1) insertion and lookup using linked list
-- Configurable size limits (200MB default, 10KB per element)
-
-### 3. HTTP Protocol Support
-- Parses HTTP GET requests (HTTP/1.0 and HTTP/1.1)
-- Forwards requests to target servers via DNS resolution
-- Real-time response streaming (progressive loading)
-- Proper error handling (400, 404, 500, etc.)
-
-### 4. Cross-Platform Compatibility
-- Works on Windows, Linux, macOS
-- Automatic platform detection and adaptation
-- Compatible threading and socket implementations
-
-## Compilation and Setup
+## How to Build and Run
 
 ### Prerequisites
-- **C Compiler**: GCC (Linux/macOS) or MinGW/MSVC (Windows)
-- **Standard Libraries**: pthread, socket libraries
-- **Make** (optional but recommended)
+- A C compiler (GCC for Linux/macOS, MinGW/MSVC for Windows).
+- `make` is recommended for easier compilation.
 
-### Windows Setup
+### Windows
+
+1.  **Install a compiler:** If you don't have one, install MinGW:
+    ```bash
+    choco install mingw
+    ```
+2.  **Compile:**
+    ```bash
+    gcc -o proxy_windows.exe proxy_server_windows.c proxy_parse.c -lws2_32
+    ```
+3.  **Run:**
+    ```bash
+    ./proxy_windows.exe 8080
+    ```
+
+### Unix/Linux/macOS
+
+1.  **Install build tools:**
+    ```bash
+    # For Debian/Ubuntu
+    sudo apt-get install build-essential
+    ```
+2.  **Compile:**
+    ```bash
+    make
+    ```
+    Alternatively, compile manually:
+    ```bash
+    gcc -o proxy proxy_server_with_cache.c proxy_parse.c -lpthread
+    ```
+3.  **Run:**
+    ```bash
+    ./proxy 8080
+    ```
+
+## How to Use
+
+1.  **Start the proxy server** as described above.
+2.  **Configure your browser** or system to use the proxy:
+    -   **Server/Host:** `127.0.0.1`
+    -   **Port:** `8080` (or whatever port you used).
+3.  **Browse the web.** All your HTTP traffic will now go through the proxy.
+
+### Testing with `curl`
+
+You can also test the proxy from the command line:
 
 ```bash
-# Check if GCC is installed
-gcc --version
+# This request will be a CACHE MISS on the first run
+curl -x http://127.0.0.1:8080 http://httpbin.org/get
 
-# Install MinGW (if needed)
-choco install mingw
-
-# Compile Windows version
-make -f Makefile.windows
-
-# Start the proxy server
-./proxy_windows.exe 8080
-
-# Test immediately
-curl -x http://127.0.0.1:8080 http://httpbin.org/json
-
-# Launch Chrome with proxy
-start chrome --proxy-server="127.0.0.1:8080"
+# This request will be a CACHE HIT on the second run
+curl -x http://127.0.0.1:8080 http://httpbin.org/get
 ```
 
-### Unix/Linux Setup
-
-```bash
-# Install dependencies (Ubuntu/Debian)
-sudo apt-get install build-essential gcc make
-
-# Compile Unix version
-make
-
-# Start the proxy server
-./proxy 8080
-
-# Test with curl
-curl -x http://127.0.0.1:8080 http://www.google.com
-```
-
-### Manual Compilation
-
-**Windows:**
-```bash
-gcc -o proxy_windows.exe proxy_server_windows.c proxy_parse.c -lws2_32
-```
-
-**Unix/Linux:**
-```bash
-gcc -o proxy proxy_server_with_cache.c proxy_parse.c -lpthread
-```
-
-## Usage Examples
-
-### Basic Testing
-```bash
-# Start the proxy server
-./proxy 8080
-
-# Test with curl (in another terminal)
-curl -x http://127.0.0.1:8080 http://www.google.com
-curl -x http://127.0.0.1:8080 http://www.example.com
-```
-
-### Browser Configuration
-1. **Chrome/Firefox**: Settings → Network → Proxy Settings
-2. **HTTP Proxy**: `127.0.0.1`
-3. **Port**: `8080`
-4. **Browse normally** - all HTTP traffic will go through your proxy
-
-### Observing Cache Behavior
-1. **First Request**: Will show "Cache MISS" - fetches from target server
-2. **Repeat Request**: Will show "Cache HIT" - serves from cache instantly
-3. **Monitor**: Watch console output for cache hit/miss statistics
+Watch the console output of the proxy server to see cache hit and miss messages.
 
 ## Project Structure
 
 ```
-proxy-server/
-├── proxy_server_with_cache.c    # Main proxy implementation
-├── proxy_parse.h                # HTTP parsing library header
-├── proxy_parse.c                # HTTP parsing library source
-├── Makefile                     # Build configuration
-├── README.md                    # This documentation
-
+.
+├── proxy_server_with_cache.c    # Main proxy for Unix/Linux
+├── proxy_server_windows.c       # Main proxy for Windows
+├── proxy_parse.h                # HTTP parser header
+├── proxy_parse.c                # HTTP parser implementation
+├── Makefile                     # Build file for Unix/Linux
+└── README.md                    # This file
 ```
-
-## Key Learning Concepts
-
-### Network Programming
-- **Berkeley Sockets API**: `socket()`, `bind()`, `listen()`, `accept()`
-- **DNS Resolution**: `gethostbyname()` for hostname-to-IP conversion
-- **HTTP Protocol**: Request/response format, headers, status codes
-- **TCP Communication**: Reliable, connection-oriented data transfer
-
-### Systems Programming
-- **Multi-threading**: `pthread_create()`, thread synchronization
-- **Semaphores**: Limiting concurrent connections (`sem_wait()`, `sem_post()`)
-- **Mutex Locks**: Thread-safe cache operations (`pthread_mutex_lock()`)
-- **Memory Management**: Dynamic allocation, preventing leaks
-
-### Data Structures
-- **Linked Lists**: O(1) cache insertion/removal
-- **LRU Algorithm**: Timestamp-based eviction policy
-- **Hash-like Lookups**: URL-based cache key matching
-
-### Cross-Platform Development
-- **Preprocessor Directives**: `#ifdef _WIN32` for platform detection
-- **Function Compatibility**: Wrapping platform-specific APIs
-- **Build Systems**: Makefile for automated compilation
-
-## Benchmarks (Typical)
-- **Concurrent Clients**: Up to 10 simultaneous connections
-- **Cache Size**: 200MB total, 10KB per entry
-- **Response Time**:
-  - Cache Hit: ~1ms
-  - Cache Miss: Network latency + server response time
-- **Memory Usage**: Base ~5MB + cached content
-
-
